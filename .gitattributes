@@ -1,0 +1,7 @@
+# 导出文档使用固定换行符，保证 Windows checkout 后的内容校验和 SHA-256 一致。
+public/ai/** text eol=lf
+public/llms.txt text eol=lf
+# README 内的版本与统计区块由同一导出器维护。
+README.md text eol=lf
+# Linux Nginx 的可部署配置保持 LF。
+deploy/nginx/*.conf text eol=lf

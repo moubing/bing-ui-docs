@@ -1,0 +1,67 @@
+import { expect, test } from '@playwright/test'
+import { componentDocsTests, navigateToDocs } from './component-docs'
+
+const open = componentDocsTests({ slug: 'autocomplete', title: 'BingAutocomplete', ready: '#basic input', previews: 3, tables: 5,
+  sections: ['overview', 'basic', 'controlled', 'actions', 'props', 'events', 'slots', 'expose', 'types'] })
+
+test('Autocomplete：行尾操作与普通选择独立', async ({ page }, info) => {
+  await open(page)
+  const input = page.getByRole('combobox', { name: '带行尾操作的搜索', exact: true })
+  await input.click()
+  await page.getByRole('button', { name: '在新标签页打开：REQ-7（搜索结果可在当前页或新标签页打开）', exact: true }).click()
+  await expect(page.locator('#actions [role=status]')).toContainText('新标签页：REQ-7')
+  await expect(input).toHaveValue('REQ')
+  await expect(input).toHaveAttribute('aria-expanded', 'true')
+  await input.focus()
+  await input.press('Enter')
+  await expect(page.locator('#actions [role=status]')).toContainText('当前页：REQ-7')
+  for (const width of [1440, 390, 320]) for (const theme of ['light', 'dark']) {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.evaluate(theme => { document.documentElement.dataset.bingTheme = theme }, theme)
+    await input.click()
+    const grid = page.getByRole('grid', { name: '带行尾操作的搜索' })
+    const button = grid.getByRole('button').first()
+    await expect(button).toBeVisible()
+    const bounds = await button.boundingBox()
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width)
+    await page.screenshot({ path: info.outputPath(`autocomplete-actions-${width}-${theme}.png`) })
+    await input.press('Escape')
+  }
+})
+
+test('Autocomplete：真实输入、键盘详情、导航卸载浮层', async ({ page }) => {
+  await open(page)
+  const input = page.getByRole('combobox', { name: '搜索需求', exact: true })
+  await input.fill('付款')
+  await expect(page.getByRole('option')).toHaveCount(1)
+  await input.press('ArrowDown')
+  await expect(page.locator('.bing-autocomplete__detail')).toContainText('设计同学')
+  await input.press('Enter')
+  await expect(page.locator('#basic [role="status"]')).toContainText('REQ-7（付款数据分类）')
+  await input.fill('布局')
+  await navigateToDocs(page, 'button')
+  await expect(page.locator('.bing-autocomplete__panel')).toHaveCount(0)
+  await navigateToDocs(page, 'autocomplete')
+  await expect(input).toBeVisible()
+})
+
+test('Autocomplete：网页受控示例在空输入时不展开，默认示例保持原行为', async ({ page }) => {
+  await open(page)
+  const basic = page.getByRole('combobox', { name: '搜索需求', exact: true })
+  await basic.click()
+  await expect(basic).toHaveAttribute('aria-expanded', 'true')
+  await basic.press('Escape')
+  await page.getByRole('button', { name: '聚焦搜索', exact: true }).click()
+  const input = page.getByRole('combobox', { name: '受控搜索', exact: true })
+  await expect(input).toBeFocused()
+  await expect(input).toHaveAttribute('aria-expanded', 'false')
+  await input.press('ArrowDown')
+  await expect(input).toHaveAttribute('aria-expanded', 'false')
+  await input.fill('req7')
+  await expect(page.getByRole('option')).toHaveCount(1)
+  await page.locator('#controlled').getByRole('button', { name: '清空输入', exact: true }).click()
+  await expect(input).toHaveAttribute('aria-expanded', 'false')
+  await input.fill('   ')
+  await expect(input).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByRole('listbox')).toHaveCount(0)
+})

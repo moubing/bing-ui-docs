@@ -1,0 +1,7 @@
+<script setup lang="ts">
+import DocsLiveExample from '~/components/content/DocsLiveExample.vue'
+import Preview from '~~/examples/button/busy.vue'
+import source from '~~/examples/button/busy.vue?raw'
+</script>
+
+<template><DocsLiveExample :preview="Preview" :source="source" /></template>

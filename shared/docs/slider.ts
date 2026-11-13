@@ -1,0 +1,42 @@
+import type { DocsApiTables } from './types'
+export const sliderApi: DocsApiTables = {
+  props: { headers: ['属性', '类型', '默认值', '说明'], codeColumns: 3, rows: [
+    ['modelValue', 'number | [number, number]', 'undefined', '受控值，range=true 时使用元组；单值模板事件仍推断 number。'],
+    ['defaultValue', 'number | [number, number]', '0（范围为 [min, max]）', '非受控初始值，按范围和步长规范化。'],
+    ['orientation', 'BingSliderOrientation', "'horizontal'", '方向由滑块自身决定，不继承弹窗或滚动容器的方向。vertical 从下到上递增，不随 RTL 翻转；默认高度 200px，可通过 style.height 调整。'],
+    ['resetValue', 'number | [number, number]', 'undefined', '双击滑块恢复规范化后的值；范围模式恢复整个元组。仍应提供可发现的恢复按钮。'],
+    ['size', 'BingSliderSize', '继承 FormItem / Form / ConfigProvider，否则 md', 'sm / md / lg 控制轨道、滑块和命中区域。'],
+    ['range', 'boolean', 'false', '双滑块，两端不交叉。'],
+    ['minDistance', 'number', '0', '两端最小间距，向上对齐步长，并限制为可用跨度。'],
+    ['thumbAriaLabels', '[string, string]', 'undefined', '两个滑块各自的完整可访问名称，例如最低价格 / 最高价格。'],
+    ['tooltip', 'BingSliderTooltipMode', "'never'", 'auto 在操作或键盘聚焦时显示，结束后延迟 600ms 隐藏；always 始终显示。'],
+    ['formatTooltip', '(value: number) => string', 'undefined', '格式化可见气泡；不替代 formatValueText 的读屏说明。'],
+    ['marks', 'BingSliderMark[]', '[]', '数字或 { value, label? } 刻度。'],
+    ['snapToMarks', 'boolean', 'false', '只选择有效刻度，不受 step 限制；无有效刻度时回退 step。'],
+    ['min / max', 'number', '0 / 100', '可选范围；max 小于 min 时视为同值并禁用操作。'],
+    ['step', 'number', '1', '有限正数，非法值回退 1。合法刻度从 min 起算，不超过 max。'],
+    ['disabled', 'boolean', 'undefined', '未指定时继承 Form/FormItem 禁用状态。'],
+    ['id / name', 'string', 'undefined', '保留原生 label、form 和表单提交；范围模式两个 input 共用 name。'],
+    ['status', 'BingControlStatus', 'undefined', '继承表单状态；error 提供错误色和 aria-invalid。'],
+    ['ariaLabel / ariaLabelledby / ariaDescribedby', 'string', 'undefined', '原生滑块可访问名称及描述；优先用 label for 或 FormItem 标签。'],
+    ['formatValueText', '(value: number) => string', 'undefined', '生成 aria-valuetext，例如“正文宽度 880 像素”。'],
+  ] },
+  events: { headers: ['事件', '载荷', '说明'], codeColumns: 2, rows: [
+    ['update:modelValue', 'number | [number, number]', '操作中连续更新规范化值；受控父级可拒绝或修正。'],
+    ['change', 'number | [number, number]', '指针结束、键盘松开或失焦时，为本次已接受变化提交一次；重复值和 Esc 撤销不提交。'],
+    ['focus / blur', 'FocusEvent', '原生焦点事件；blur 同时通知表单。'],
+  ] },
+  expose: { headers: ['成员', '类型', '说明'], codeColumns: 2, rows: [
+    ['input', 'HTMLInputElement | null', '第一个原生 range，兼容原有用法。'],
+    ['inputs', 'HTMLInputElement[]', '全部原生 range；范围模式两个。'],
+    ['focus(index?) / blur()', '(index?: number) => void / () => void', '聚焦指定滑块（默认 0）或移出焦点。'],
+  ] },
+  types: { headers: ['类型', '说明'], codeColumns: 1, rows: [
+    ['BingSliderProps / BingSliderEmits / BingSliderExpose', '属性、事件与实例方法类型，从 @moubing/bing-ui 导入。'],
+    ['BingSliderValue / BingSliderModelValue<Range>', 'number | [number, number]；泛型根据 range 收窄。'],
+    ['BingSliderOrientation', "'horizontal' | 'vertical'"],
+    ['BingSliderSize / BingSliderTooltipMode', "'sm' | 'md' | 'lg' / 'auto' | 'always' | 'never'"],
+    ['BingSliderMark', 'number | { value: number; label?: string }'],
+    ['BingControlStatus', "'default' | 'error' | 'success' | 'warning'"],
+  ] },
+}

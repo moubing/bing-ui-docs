@@ -1,0 +1,48 @@
+import { expect, test } from '@playwright/test'
+import { componentDocsTests } from './component-docs'
+
+const open = componentDocsTests({ slug: 'input', title: 'BingInput', ready: '#playground .doc-example__preview input', previews: 9, tables: 4,
+  sections: ['overview', 'playground', 'states', 'icon-clear', 'number', 'editing', 'readonly-caret', 'debounce-events', 'expose', 'props', 'slots-events', 'slots', 'events', 'expose-list'] })
+
+test('Input：独立模型、清除、防抖反馈与原生选区', async ({ page }) => {
+  await open(page)
+  const basic = page.getByRole('textbox', { name: '基础输入框示例', exact: true })
+  await basic.fill('新的输入')
+  await expect(basic).toHaveAttribute('autocomplete', 'off')
+  await expect(page.locator('#playground .doc-example__preview').getByRole('button', { name: '清空输入', exact: true })).toHaveCount(0)
+  await expect(page.locator('#playground .input-feedback')).toContainText('当前值：新的输入')
+  await page.getByRole('radio', { name: /^error / }).locator('..').click()
+  await expect(basic).toHaveAttribute('aria-invalid', 'true')
+  const state = page.locator('#states input').first()
+  await state.fill('可编辑')
+  await expect(page.locator('#states .bing-input').first().getByRole('button')).toHaveCount(0)
+  await state.fill('')
+  await expect(state).toHaveValue('')
+  await expect(page.locator('#states input').nth(1)).toHaveValue('md 尺寸')
+  const keyword = page.locator('#icon-clear input').first()
+  await page.locator('#icon-clear .bing-input').first().getByRole('button', { name: '清空输入', exact: true }).click()
+  await expect(keyword).toHaveValue('')
+  const search = page.getByPlaceholder('输入后等待 500ms', { exact: true })
+  await search.fill('查找组件')
+  await expect(page.locator('#debounce-events .input-feedback')).toContainText('防抖值：查找组件')
+  await page.locator('#debounce-events .doc-example__preview').getByRole('button', { name: '清空输入', exact: true }).click()
+  await expect(page.locator('#debounce-events .input-feedback')).toContainText('防抖值：空字符串')
+  await page.getByRole('button', { name: 'select', exact: true }).click()
+  const input = page.locator('#expose input')
+  expect(await input.evaluate((node: HTMLInputElement) => [node.selectionStart, node.selectionEnd])).toEqual([0, (await input.inputValue()).length])
+  await expect(page.locator('#expose .input-feedback')).toContainText(await input.inputValue())
+})
+
+test('Input：清除跟随类型、数字模型与只读示例', async ({ page }) => {
+  await open(page)
+  await page.getByRole('radiogroup', { name: '输入框类型', exact: true }).getByRole('radio', { name: 'search', exact: true }).locator('..').click()
+  await expect(page.locator('#playground .doc-example__preview').getByRole('button', { name: '清空输入', exact: true })).toBeVisible()
+  await page.getByRole('radiogroup', { name: '清除按钮行为', exact: true }).getByRole('radio', { name: '禁止清除', exact: true }).locator('..').click()
+  await expect(page.locator('#playground .bing-code-block__code')).toContainText('"clearMode": "never"')
+  await expect(page.locator('#playground .doc-example__preview').getByRole('button')).toHaveCount(0)
+  await page.locator('#number').getByRole('button', { name: '增加数值', exact: true }).first().click()
+  await expect(page.locator('#number').getByRole('status')).toContainText('模型：3；类型：number；input：3 (string)')
+  await expect(page.getByRole('textbox', { name: '只读与光标示例', exact: true })).toHaveAttribute('readonly', '')
+  await page.locator('#readonly-caret').getByRole('checkbox', { name: '只读', exact: true }).locator('..').click()
+  await page.getByRole('textbox', { name: '只读与光标示例', exact: true }).fill('现在可以编辑')
+})

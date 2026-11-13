@@ -1,0 +1,71 @@
+import { expect, test, type Page } from '@playwright/test'
+
+const errors = new WeakMap<Page, string[]>()
+test.beforeEach(({ page }) => {
+  const messages: string[] = []
+  errors.set(page, messages)
+  page.on('pageerror', error => messages.push(error.message))
+  page.on('console', message => {
+    if (/failed to resolve component|unhandled error/i.test(message.text())) messages.push(message.text())
+  })
+})
+test.afterEach(({ page }) => expect(errors.get(page)).toEqual([]))
+
+test('Radio 导出基础与状态：同组共用一个值，重复点击不反选', async ({ page }) => {
+  await page.goto('/?component=radio&example=basic')
+  const first = page.locator('#radio-doc-mode')
+  await expect(first).toBeChecked()
+  await first.locator('..').click()
+  await expect(first).toBeChecked()
+  await page.goto('/?component=radio&example=states')
+  await expect(page.locator('#radio-state-md')).toBeChecked()
+  await page.locator('#radio-state-lg').locator('..').click()
+  await expect(page.getByRole('status')).toHaveText('当前值：lg')
+  await expect(page.locator('input:checked')).toHaveCount(1)
+  await expect(page.locator('#radio-state-disabled')).toBeDisabled()
+  await expect(page.locator('#radio-state-error')).toHaveAttribute('aria-invalid', 'true')
+})
+
+test('Radio 导出组内插槽：三个选项，Group 发出值与原始事件', async ({ page }) => {
+  await page.goto('/?component=radio&example=group')
+  await expect(page.getByRole('radio')).toHaveCount(3)
+  await page.locator('#display-mode-immersive').locator('..').click()
+  await expect(page.getByRole('status')).toHaveText('当前方案：immersive；Group change：immersive；原始事件：change')
+  await expect(page.locator('input:checked')).toHaveCount(1)
+  for (const radio of await page.getByRole('radio').all()) await expect(radio).toHaveAttribute('name', 'display-mode')
+})
+
+test('Radio 导出事件：focus、change、重复点击、blur 与外部重置', async ({ page }) => {
+  await page.goto('/?component=radio&example=events')
+  const radio = page.locator('#radio-email')
+  await radio.focus()
+  await expect(page.getByRole('status')).toContainText('focus：获得焦点')
+  await radio.press('Space')
+  await expect(page.getByRole('status')).toContainText('change：已选中 email；原始事件：change')
+  await radio.locator('..').click()
+  await expect(radio).toBeChecked()
+  await page.getByRole('button', { name: '重置', exact: true }).focus()
+  await expect(page.getByRole('status')).toContainText('blur：失去焦点')
+  await page.getByRole('button', { name: '重置', exact: true }).click()
+  await expect(radio).not.toBeChecked()
+  await expect(page.getByRole('status')).toHaveText('当前值：none；已重置')
+})
+
+test('Radio 阅读应用：数字 0 与字符串 0 严格区分，false、null 和两个插槽', async ({ page }) => {
+  await page.goto('/?understanding=radio')
+  const ids = await page.getByRole('radio').evaluateAll(nodes => nodes.map(node => node.id))
+  expect(ids.every(Boolean)).toBe(true)
+  expect(new Set(ids).size).toBe(3)
+  await expect(page.getByRole('radio', { name: '数字零', exact: true })).toBeChecked()
+  await expect(page.getByRole('radio', { name: '字符串零 保留字符串类型', exact: true })).not.toBeChecked()
+  await expect(page.getByText('被替代的主文案', { exact: true })).toHaveCount(0)
+  await expect(page.getByText('被替代的描述', { exact: true })).toHaveCount(0)
+  await page.getByRole('radio', { name: '字符串零 保留字符串类型', exact: true }).locator('..').click()
+  await expect(page.getByRole('status')).toHaveText('string:0')
+  await expect(page.getByText('string:0:change', { exact: true })).toBeVisible()
+  await page.getByRole('radio', { name: '关闭配额', exact: true }).locator('..').click()
+  await expect(page.getByRole('status')).toHaveText('boolean:false')
+  await page.getByRole('button', { name: '清空选择', exact: true }).click()
+  await expect(page.locator('input:checked')).toHaveCount(0)
+  await expect(page.getByRole('status')).toHaveText('未选择')
+})

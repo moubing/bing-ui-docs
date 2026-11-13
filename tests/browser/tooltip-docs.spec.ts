@@ -1,0 +1,46 @@
+import { expect, test } from '@playwright/test'
+import { componentDocsTests, navigateToDocs } from './component-docs'
+
+const open = componentDocsTests({ slug: 'tooltip', title: 'BingTooltip', ready: '#interaction .bing-tooltip', previews: 5, tables: 5,
+  sections: ['overview', 'interaction', 'rich-content', 'placement', 'manual', 'toolbar', 'props', 'slots', 'events', 'api-types'] })
+
+test('Tooltip：实际按钮关联、触发切换、富内容与手动控制', async ({ page }) => {
+  await open(page)
+  const anchor = page.getByRole('button', { name: '查看提示', exact: true })
+  await anchor.click()
+  await expect(anchor).toHaveAttribute('aria-describedby', 'docs-tooltip-basic')
+  await expect(page.getByRole('tooltip')).toHaveText('斜体')
+  await expect.poll(() => page.getByRole('tooltip').evaluate(node => node.getBoundingClientRect().height)).toBe(32)
+  await page.keyboard.press('Escape')
+  await expect(page.locator('#interaction .tooltip-feedback')).toContainText('关闭：escape')
+  await page.getByRole('radiogroup', { name: 'Tooltip 触发方式', exact: true }).getByRole('radio', { name: /^manual/ }).locator('..').click()
+  await expect(page.getByRole('checkbox', { name: '点击外部关闭', exact: true })).not.toBeChecked()
+  await page.getByRole('button', { name: '手动切换', exact: true }).click()
+  await expect(page.getByRole('tooltip')).toBeVisible()
+  await page.getByRole('button', { name: '手动切换', exact: true }).click()
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
+  await page.getByRole('button', { name: '字段说明', exact: true }).click()
+  await page.getByRole('button', { name: '标记已读', exact: true }).click()
+  await expect(page.locator('#rich-content .tooltip-feedback')).toContainText('1 次')
+  await page.keyboard.press('Escape')
+  await page.locator('#manual').getByRole('button', { name: '打开', exact: true }).click()
+  await expect(page.locator('#manual .tooltip-feedback')).toContainText('状态：已打开')
+  await page.locator('#manual').getByRole('button', { name: '切换', exact: true }).click()
+  await expect(page.locator('#manual .tooltip-feedback')).toContainText('状态：已关闭')
+})
+
+test('Tooltip：缓存页面停用时移除浮层，返回时保留配置', async ({ page }) => {
+  await open(page)
+  await page.getByRole('radiogroup', { name: 'Tooltip 触发方式', exact: true }).getByRole('radio', { name: /^manual/ }).locator('..').click()
+  await page.getByRole('button', { name: '手动切换', exact: true }).click()
+  await expect(page.getByRole('tooltip')).toBeVisible()
+  await navigateToDocs(page, 'button')
+  await expect(page.locator('.doc-page h1')).toHaveText('BingButton')
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
+  await navigateToDocs(page, 'tooltip')
+  await expect(page.locator('.doc-page h1')).toHaveText('BingTooltip')
+  await expect(page.getByRole('button', { name: '手动切换', exact: true })).toBeVisible()
+  await expect(page.getByRole('tooltip')).toHaveCount(0)
+  await page.getByRole('button', { name: '手动切换', exact: true }).click()
+  await expect(page.getByRole('tooltip')).toBeVisible()
+})

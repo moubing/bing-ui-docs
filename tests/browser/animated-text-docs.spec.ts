@@ -1,0 +1,46 @@
+import { expect, test } from '@playwright/test'
+import { componentDocsTests, navigateToDocs } from './component-docs'
+
+test.beforeEach(async ({ page }) => { await page.emulateMedia({ reducedMotion: 'reduce' }) })
+const open = componentDocsTests({ slug: 'animated-text', title: 'BingAnimatedText', ready: '#effects .animated-text-stage .bing-animated-text', previews: 5, tables: 3,
+  sections: ['overview', 'effects', 'trigger', 'jump', 'disabled', 'motion', 'props', 'slots-types'] })
+
+test('AnimatedText：效果切换、文字重建、停止与恢复循环', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await open(page)
+  const preview = page.locator('#effects .animated-text-stage .bing-animated-text')
+  await page.getByRole('radiogroup', { name: '文本动效', exact: true }).getByRole('radio', { name: /^jump/ }).locator('..').click()
+  await expect(preview).toHaveAttribute('data-jump-playing', 'true')
+  await page.locator('#animated-text-label').fill('动态新文案')
+  await expect(preview.locator('.bing-animated-text__content')).toHaveText('动态新文案')
+  await page.getByRole('checkbox', { name: '禁用动画', exact: true }).locator('..').click()
+  await expect(preview).not.toHaveAttribute('data-jump-playing')
+  await expect(preview.locator('.bing-animated-text__char')).toHaveCount(0)
+  await page.getByRole('checkbox', { name: '禁用动画', exact: true }).locator('..').click()
+  await expect(preview).toHaveAttribute('data-jump-playing', 'true')
+  await page.getByRole('radiogroup', { name: '文本动效', exact: true }).getByRole('radio', { name: /^none/ }).locator('..').click()
+  await expect(preview).not.toHaveAttribute('data-jump-playing')
+  await expect(preview).toHaveText('动态新文案')
+})
+
+test('AnimatedText：扫光方向、跳动参数和缓存页面卸载', async ({ page }, info) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await open(page)
+  await page.getByRole('radiogroup', { name: '扫光方向', exact: true }).getByRole('radio', { name: /^right/ }).locator('..').click()
+  await expect(page.locator('#trigger .animated-text-stage .bing-animated-text')).toHaveClass(/shine-direction-right/)
+  const jump = page.locator('#jump .animated-text-stage .bing-animated-text')
+  await jump.hover()
+  await expect(jump).toHaveAttribute('data-jump-playing', 'true')
+  await page.locator('#jump-y').fill('-24')
+  await expect(jump).toHaveCSS('--animated-text-jump-room', '26px')
+  await expect(jump).not.toHaveAttribute('data-jump-playing')
+  await page.locator('#jump .doc-example').screenshot({ path: info.outputPath('animated-text-light-1440.png'), animations: 'disabled', style: '#nuxt-devtools-container { display: none !important; }' })
+  const previous = await page.locator('#effects .animated-text-stage .bing-animated-text').elementHandle()
+  await navigateToDocs(page, 'button')
+  await expect(page.locator('.doc-page h1')).toHaveText('BingButton')
+  expect(await previous!.evaluate(node => node.isConnected)).toBe(false)
+  await navigateToDocs(page, 'animated-text')
+  await expect(page.locator('.doc-page h1')).toHaveText('BingAnimatedText')
+  await expect(page.locator('#effects .animated-text-stage .bing-animated-text')).toHaveAttribute('data-shine-playing', 'true')
+  await expect(jump).toHaveCSS('--animated-text-jump-room', '26px')
+})

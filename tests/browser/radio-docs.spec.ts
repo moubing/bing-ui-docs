@@ -1,0 +1,35 @@
+import { expect, test } from '@playwright/test'
+import { componentDocsTests } from './component-docs'
+
+const open = componentDocsTests({ slug: 'radio', title: 'BingRadio', ready: '#radio-doc-mode', previews: 4, tables: 3,
+  sections: ['overview', 'playground', 'states', 'inside-group', 'events-demo', 'props', 'slots-events', 'slots', 'events'] })
+
+test('Radio：动态 value、各组选中状态独立、组内切换和重置事件', async ({ page }) => {
+  await open(page)
+  const basic = page.locator('#radio-doc-mode')
+  await expect(basic).toBeChecked()
+  await page.locator('#radio-value').fill('usage')
+  await expect(basic).not.toBeChecked()
+  await basic.locator('..').click()
+  await expect(page.locator('#playground .radio-feedback')).toContainText('modelValue：usage')
+  await expect(page.locator('#playground .bing-code-block__code')).toContainText('"value": "usage"')
+  await page.getByRole('radiogroup', { name: 'Radio 尺寸', exact: true }).getByRole('radio', { name: 'lg', exact: true }).locator('..').click()
+  await expect(basic).toBeChecked()
+  await expect(page.locator('#radio-state-md')).toBeChecked()
+  await page.locator('#radio-state-sm').locator('..').click()
+  await expect(page.locator('#states input:checked')).toHaveCount(1)
+  await expect(page.locator('#radio-state-disabled')).toBeDisabled()
+  await page.locator('#display-mode-default').locator('..').click()
+  await expect(page.locator('#inside-group .radio-feedback')).toContainText('当前方案：default')
+  const event = page.locator('#radio-email')
+  await event.focus()
+  await expect(page.locator('#events-demo .radio-feedback')).toContainText('focus：获得焦点')
+  await event.press('Space')
+  await expect(page.locator('#events-demo .radio-feedback')).toContainText('change：已选中 email')
+  await page.getByRole('button', { name: '重置', exact: true }).click()
+  await expect(event).not.toBeChecked()
+  await expect(page.locator('#events-demo .radio-feedback')).toContainText('已重置')
+  const ids = await page.locator('.doc-page input[type="radio"]').evaluateAll(nodes => nodes.map(node => node.id))
+  expect(ids.every(Boolean)).toBe(true)
+  expect(new Set(ids).size).toBe(ids.length)
+})

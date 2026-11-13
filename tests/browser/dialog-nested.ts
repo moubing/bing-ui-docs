@@ -1,0 +1,30 @@
+import { expect, type Page } from '@playwright/test'
+
+export async function verifyNestedDialog(page: Page) {
+  await page.getByRole('button', { name: '编辑项目设置', exact: true }).click()
+  const parent = page.getByRole('dialog', { name: '项目设置', exact: true })
+  await page.getByRole('button', { name: '检查表单', exact: true }).click()
+  const name = page.getByRole('textbox', { name: '项目名称', exact: true })
+  await expect(name).toBeFocused()
+  await expect(parent).toContainText('项目名称至少 2 个字符')
+  await name.fill('新版文档')
+  const select = page.getByRole('button', { name: '可见范围', exact: true })
+  await select.click()
+  await expect(page.getByRole('listbox')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(select).toBeFocused()
+  await expect(parent).toBeVisible()
+  await select.click()
+  await page.getByRole('option', { name: '团队可见', exact: true }).click()
+  await page.getByRole('button', { name: '检查表单', exact: true }).click()
+  await expect(parent.getByRole('status')).toHaveText('表单校验通过')
+  const childOpener = page.getByRole('button', { name: '二次确认', exact: true })
+  await childOpener.click()
+  const child = page.getByRole('dialog', { name: '确认项目范围', exact: true })
+  await expect(child).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(child).toHaveCount(0)
+  await expect(childOpener).toBeFocused()
+  await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+  return parent
+}

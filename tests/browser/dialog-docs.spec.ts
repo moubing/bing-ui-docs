@@ -1,0 +1,108 @@
+import { expect, test } from '@playwright/test'
+import { componentDocsTests, navigateToDocs } from './component-docs'
+import { verifyNestedDialog } from './dialog-nested'
+import { exerciseDialogFrame } from './s1-interactions'
+
+const open = componentDocsTests({ slug: 'dialog', title: 'BingDialog', ready: '#basic .dialog-demo-stage .bing-button', previews: 7, tables: 5,
+  sections: ['overview', 'basic', 'slots', 'ambience', 'close-behavior', 'nested', 'frame', 'guard', 'props', 'overlay-orb', 'slot-api', 'events', 'api-types'] })
+
+test('Dialog：固定框架与分类栏在小视口保持可见', async ({ page }) => {
+  await open(page)
+  await exerciseDialogFrame(page)
+})
+
+test('Dialog：窄屏表单错误聚焦、Select 与二次确认逐层返回', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 860 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await open(page)
+  const parent = await verifyNestedDialog(page)
+  await parent.screenshot({ path: info.outputPath('dialog-nested-390.png'), animations: 'disabled', style: '#nuxt-devtools-container { display: none !important; }' })
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '编辑项目设置', exact: true })).toBeFocused()
+})
+
+test('Dialog：默认确认、配置禁用和自定义底部事件', async ({ page }) => {
+  await open(page)
+  const launch = page.getByRole('button', { name: '打开弹窗', exact: true })
+  await launch.click()
+  await expect(page.getByRole('dialog', { name: '发布组件文档' })).toBeVisible()
+  await page.getByRole('button', { name: '确认发布', exact: true }).click()
+  await expect(page.locator('#basic .dialog-feedback')).toContainText('confirm：1')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('#basic .dialog-feedback')).toContainText('最后关闭：escape')
+  await page.getByRole('checkbox', { name: '禁用确认按钮', exact: true }).locator('..').click()
+  await expect(page.getByRole('checkbox', { name: '禁用确认按钮', exact: true })).toBeChecked()
+  await launch.click()
+  await expect(page.getByRole('button', { name: '确认发布', exact: true })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('checkbox', { name: '禁用确认按钮', exact: true }).locator('..').click()
+  await expect(page.getByRole('checkbox', { name: '禁用确认按钮', exact: true })).not.toBeChecked()
+  await page.getByRole('checkbox', { name: '确认按钮 loading', exact: true }).locator('..').click()
+  await expect(page.getByRole('checkbox', { name: '确认按钮 loading', exact: true })).toBeChecked()
+  await launch.click()
+  await expect(page.getByRole('button', { name: '确认发布', exact: true })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('button', { name: '结束模拟加载', exact: true }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: '打开自定义 footer', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '生成组件发布记录', exact: true })
+  await expect(dialog).not.toHaveAttribute('aria-labelledby')
+  await dialog.getByRole('button', { name: '保存草稿', exact: true }).click()
+  await expect(page.locator('#slots .dialog-feedback')).toContainText('已保存草稿')
+  await dialog.getByRole('button', { name: '确认但保留', exact: true }).click()
+  await expect(page.locator('#slots .dialog-feedback')).toContainText('confirm：1')
+  await dialog.getByRole('button', { name: '发布', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('#slots .dialog-feedback')).toContainText('关闭来源：confirm')
+  await expect(page.locator('#slots .dialog-feedback')).toContainText('confirm：1')
+})
+
+test('Dialog：关闭顺序与缓存页面往返时移除弹窗、恢复滚动', async ({ page }) => {
+  await open(page)
+  const original = await page.evaluate(() => ({ body: document.body.style.overflow, html: document.documentElement.style.overflow }))
+  await page.getByRole('button', { name: '打开关闭行为示例', exact: true }).click()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.getByRole('button', { name: '确定', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.locator('#close-behavior .dialog-feedback')).toContainText('confirm → update:false → close:confirm')
+  await page.getByRole('button', { name: '打开弹窗', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+  // 通过当前页面的真实路由链接触发缓存停用；遮罩拦截鼠标，因此调用链接的 DOM click。
+  await page.locator('a[href="/docs/components/button"]').first().evaluate((node: HTMLAnchorElement) => node.click())
+  await expect(page.locator('.doc-page h1')).toHaveText('BingButton')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(() => ({ body: document.body.style.overflow, html: document.documentElement.style.overflow }))).toEqual(original)
+  await navigateToDocs(page, 'dialog')
+  await expect(page.locator('.doc-page h1')).toHaveText('BingDialog')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: '打开弹窗', exact: true }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+for (const width of [1440, 390]) for (const theme of ['light', 'dark']) {
+  test(`Dialog 弹窗 ${width} ${theme}：标题、主体与底部布局`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 860 })
+    await page.addInitScript(value => localStorage.setItem('bing-ui-docs-theme', value), theme)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await open(page)
+    await page.getByRole('button', { name: '打开自定义 footer', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '生成组件发布记录', exact: true })
+    await expect(dialog).toBeVisible()
+    await expect(page.locator('.bing-dialog-root')).toHaveClass(/is-active/)
+    const box = (await dialog.boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(width)
+    expect(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true)
+    await page.evaluate(() => document.fonts.ready)
+    await dialog.screenshot({ path: info.outputPath(`dialog-${theme}-${width}.png`), animations: 'disabled', style: '#nuxt-devtools-container { display: none !important; }' })
+  })
+}

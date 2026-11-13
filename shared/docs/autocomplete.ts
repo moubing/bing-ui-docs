@@ -1,0 +1,50 @@
+import type { DocsApiTables } from './types'
+
+export const autocompleteApi: DocsApiTables = {
+  props: { headers: ['属性', '类型', '默认值', '说明'], codeColumns: 3, rows: [
+    ['modelValue', 'string', "''", '输入文字；使用 v-model 接收更新，不等于选中的 value。'],
+    ['options', 'BingAutocompleteOption[]', '[]', '候选数组，value 在当前数组中必须唯一。'],
+    ['filter', 'boolean', 'true', '默认仅按 label 包含输入文字筛选，忽略大小写；false 使用业务传入的全部候选及排序。'],
+    ['openOnEmpty', 'boolean', 'true', '自 0.9.0 提供；false 时，空字符串或纯空白不展开候选，清空后收起。聚焦、方向键及 focus() 均遵守此配置。'],
+    ['loading', 'boolean', 'false', '显示加载状态，期间隐藏候选并禁止选择旧结果。'],
+    ['error', 'string', "''", '非空时显示错误并禁止选择；可在 error 插槽放重试按钮。'],
+    ['disabled', 'boolean', 'false（可继承 Form）', '禁用输入和选择并关闭面板。'],
+    ['clearable', 'boolean', 'true', '输入非空时显示清除按钮。'],
+    ['placeholder', 'string', 'undefined', '输入框占位文字。'],
+    ['emptyText', 'string', "'没有匹配的候选'", '空候选提示，可通过 empty 插槽替换。'],
+    ['ariaLabel / ariaDescribedby', 'string', 'undefined', '实际输入框的可访问名称和说明关系。'],
+    ['id', 'string', '自动生成或继承 FormItem', '输入框 ID。'],
+    ['size', "'sm' | 'md' | 'lg'", "继承 FormItem / Form / ConfigProvider，否则 'md'", '输入框尺寸。'],
+    ['status', "'default' | 'error' | 'success' | 'warning'", "'default'（可继承 Form）", '字段视觉状态。'],
+    ['icon', 'Component', 'undefined', '输入框前置图标；也可使用 icon 插槽。'],
+    ['block', 'boolean', 'false', '占满父容器；默认宽 280px，并限制在父容器宽度内。'],
+    ['panelWidth', 'number', '320', '候选宽度（像素），至少与输入框等宽，最终受可视视口限制。'],
+    ['panelMaxHeight', 'number', '360', '候选内容最大高度（像素），实际按上下空间收缩。'],
+    ['completeOnSelect', 'boolean', 'true', '选择后将 label 写入模型；导航搜索可关闭以保留关键字。'],
+    ['closeOnSelect', 'boolean', 'true', '选择后关闭面板；异步导航可关闭此项，成功后用 close() 收起。'],
+    ['optionActionLabel', 'string', 'undefined', '自 0.19.0 提供：非空时为每条候选显示独立行尾按钮；按钮名称包含此标签和完整候选 label。候选禁用时按钮也禁用。'],
+  ] },
+  events: { headers: ['事件', '参数', '说明'], codeColumns: 2, rows: [
+    ['update:modelValue', 'string', '输入、清除、自动补全时发出；输入变化不自动选择。'],
+    ['select', 'BingAutocompleteOption', '鼠标点击或 Enter 选择；由业务处理后续动作。'],
+    ['option-action', '(option: BingAutocompleteOption, event: MouseEvent)', '独立按钮激活时同步发出，支持用户事件内 window.open；不触发 select、不补全文字、不自动关闭。'],
+    ['open / close', '-', '候选面板打开或关闭时发出。'],
+    ['clear', '-', '用户点击清除按钮。'],
+  ] },
+  slots: { headers: ['插槽', '参数', '说明'], codeColumns: 2, rows: [
+    ['icon', '-', '输入图标。'], ['option', '{ option; active: boolean }', '候选内容，不放嵌套交互控件；完整 label 始终作为可访问名称。'],
+    ['option-action', '{ option; active: boolean }', '行尾按钮的非交互内容，例如图标；需设置 optionActionLabel，不在插槽中嵌套按钮或链接。默认显示 optionActionLabel。'],
+    ['option-detail', '{ option: BingAutocompleteOption }', '高亮项的只读详情；宽屏在旁边，空间不足时在候选下方。'],
+    ['header / footer', '-', '面板说明、统计、更多结果等操作。'],
+    ['empty / loading', '-', '空结果或加载提示。'], ['error', '{ error: string }', '加载失败提示及重试。'],
+  ] },
+  expose: { headers: ['成员', '类型', '说明'], codeColumns: 2, rows: [
+    ['focus()', '() => void', '聚焦输入并在允许时打开候选；openOnEmpty=false 且输入为空时仅聚焦。挂载后调用。'],
+    ['close()', '() => void', '关闭面板，保留模型，不改变外部编辑器选区。'],
+    ['input', 'HTMLInputElement | null', '原生输入框。'],
+  ] },
+  types: { headers: ['类型', '定义'], codeColumns: 2, rows: [
+    ['BingAutocompleteOption', '{ label: string; value: string | number; disabled?: boolean; description?: string; detail?: string; meta?: Record<string, string | number | boolean | null | undefined>; [key: string]: unknown }'],
+    ['BingAutocompleteProps / Emits / Slots / Expose', '公开组件属性、事件、插槽与实例类型。'],
+  ] },
+}
