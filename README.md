@@ -7,17 +7,19 @@
 <p align="center"><strong>从看见效果，到理解接口，再到写进自己的应用。</strong></p>
 <p align="center">Nuxt 4 · Vue 3 · 交互式示例 · Markdown · AI 可读文档</p>
 
+**[在线访问 · 使用文档](https://101.35.217.21:6008/docs)** · [Storybook 演示](https://101.35.217.21:6007/?path=/docs/components-binganimatedtext--docs) · [AI 文档](#ai-文档) · [相关项目](#相关项目)
+
 `bing-ui-docs` 是 `@moubing/bing-ui` 的使用文档与交互演示站。它把项目介绍、快速开始、组件说明、参数面板、完整 Vue 示例和 API 参考放在同一个阅读流程中，帮助开发者了解组件、验证用法并复制到自己的项目。
 
 <!-- docs:version:start -->
 文档站本身也使用 Bing UI 构建。当前运行依赖固定为 **`@moubing/bing-ui@0.19.0`**，文档修订为 **r3**。
 <!-- docs:version:end -->
 
-[![Table 组件文档总览：组件导航、使用说明、树形行、选择反馈、分页、参数面板与本页目录](docs/images/docs-overview.png)](docs/images/docs-overview.png)
+[![生产文档站快速开始：组件侧栏、版本信息、安装命令与章节目录](docs/images/quick-start-production.jpg)](docs/images/quick-start-production.jpg)
 
-*Table 文档实际操作后的页面：展开项目子项、选中一行，并在下方查看选择结果与事件反馈。左侧切换组件，右侧定位章节；点击图片可查看高清原图。*
+*2026-11-14 截取自生产文档站。快速开始集中说明版本、依赖和接入步骤；左侧切换组件，右侧定位章节。点击图片可查看原图。*
 
-[站点功能](#站点功能) · [文档与交互细节](#文档与交互细节) · [本地运行](#本地运行) · [内容架构](#内容架构) · [AI 文档](#ai-文档) · [维护流程](#维护流程) · [开发与验证](#开发与验证)
+[站点功能](#站点功能) · [AI 文档](#ai-文档) · [文档与交互细节](#文档与交互细节) · [本地运行](#本地运行) · [内容架构](#内容架构) · [维护流程](#维护流程) · [开发与验证](#开发与验证)
 
 ## 站点功能
 
@@ -39,51 +41,60 @@
 
 组件页覆盖基础控件、表单、选择器、浮层反馈、跨区域拖放、表格与布局、媒体预览、文字动效、转场和全局配置（ConfigProvider）。示例包含树形行、虚拟滚动、服务端排序、列设置、表单校验及组件组合等用法，具体支持范围在对应页面说明。
 
+## AI 文档
+
+AI 入口为自动化工具和编程助手提供可直接读取的文本资料，包含适用版本、完整用法、独立示例和展开后的 API 表。
+
+- [`public/llms.txt`](public/llms.txt)：发现组件文档，确认入口和适用范围。
+- [`public/ai/manifest.json`](public/ai/manifest.json)：核对包版本、文档修订、逐组件状态及 SHA-256。
+- [`public/ai/guides/upgrade.md`](public/ai/guides/upgrade.md)：与升级页共用的迁移指南，包含历史边界与当前写法。
+- [Button 文档](public/ai/components/button.md)、[Form 文档](public/ai/components/form.md)、[Table 文档](public/ai/components/table.md)：查看完整导出示例。
+
+读取时先确认应用安装的组件版本，再按清单选择对应组件文档。当前没有历史版本快照；迁移中或标记为 `unreleased` 的内容不能当作已发布包的已验证能力。
+
+### 导出与一致性检查
+
+这些命令无需启动网站或运行完整构建：
+
+```powershell
+# 导出全部已登记组件及共享入口
+pnpm docs:export
+
+# 只检查现有产物是否与来源一致
+pnpm docs:check
+
+# 单独更新或检查一个组件
+pnpm docs:export button
+pnpm docs:check button
+```
+
+- 单组件命令处理目标组件和共享升级指南、README 版本统计、入口 / 清单，并要求其他组件的产物保持同步。
+- 首次生成或同时修改多个组件时，使用不带组件名的全量命令。
+- 导出文件由脚本生成，应与来源一起提交到 Git，不手工修改。
+- `.gitattributes` 将生成文件固定为 LF，保证 Windows checkout 后的一致性和摘要校验。
+- 导出器会检查缺失引用、遗漏的 API / 示例、不支持的节点及版本不匹配；生成成功表示来源一致，实际交互仍需单独验证。
+
 ## 文档与交互细节
 
-下面的配图来自本地运行的真实文档页，重点展示展开的浮层、操作后的反馈和可阅读的代码/API。细节图裁取实际交互区域，以 2 倍像素密度保存；点击任意图片可查看原图。启动站点后，可通过每组图片标注的路径体验对应示例。
+以下配图直接来自生产文档页，展示实际渲染的组件、源码与 API。图片使用仓库内相对路径保存，点击可查看原图；线上页面可通过对应章节链接继续操作。
 
-### 表单：错误提示、焦点与提交反馈
+### 表格：读懂说明后直接操作
 
-路径：`/docs/components/form#layout-validation`。空表单提交后，项目名称和负责方向分别显示错误消息，焦点回到首个错误字段，下方显示 `invalid` 事件与错误数量。示例同时组合输入框、选择器、复选框组、单选框组和带字数统计的文本域，便于观察控件如何配合表单工作。
+[基础表格示例](https://101.35.217.21:6008/docs/components/table#basic) 将行为说明、树形数据、行选择和分页放在同一页。截图保留当前默认斑马纹、展开的子项、状态标签与进度，便于对照文档理解组件组合。
 
-[![Form 校验细节：必填字段错误、首个错误字段焦点、通知渠道、表单密度、文本字数与 invalid 事件反馈](docs/images/form-validation.png)](docs/images/form-validation.png)
-
-### 选择器：搜索、选中状态与选项详情
-
-路径：`/docs/components/select#detail`。展开后可搜索选项文本、描述、详情及 `meta` 字段；悬停“点击反馈”时，侧边浮层展示适用场景、时长和层级。图中同时保留当前选中项与禁用项，方便理解不同状态的呈现方式。
-
-[![Select 展开细节：搜索框、当前选中项、禁用项，以及包含适用场景、时长和层级的悬停详情](docs/images/select-details.png)](docs/images/select-details.png)
-
-### 颜色选择器：完整面板与实时配置
-
-路径：`/docs/components/color-picker#playground`。左侧展开颜色面板，展示饱和度与亮度、色相、不透明度、预设色板和颜色值输入；右侧可调整尺寸、状态、宽度及玻璃效果。图中已选择“天蓝”，两处颜色控件同步显示当前值。
-
-[![ColorPicker 交互细节：天蓝预设、颜色区域、色相与透明度滑块、HEX 输入，以及右侧参数面板](docs/images/color-picker.png)](docs/images/color-picker.png)
-
-### 表格：列设置与深色主题
-
-路径：`/docs/components/table#basic`。在深色主题下打开列设置，可查看列显隐、排序手柄和左右固定入口。图中已取消“预算”列，表格同步隐藏该列，同时保留选中行、分页与事件反馈；页面、表格和浮层使用一致的主题。
-
-[![深色 Table 交互细节：列设置浮层、已隐藏的预算列、固定列入口、进度数值、分页与选择事件](docs/images/table-columns-dark.png)](docs/images/table-columns-dark.png)
+[![生产 Table 文档：树形行、默认斑马纹、状态标签、进度与分页](docs/images/table-production.jpg)](docs/images/table-production.jpg)
 
 ### 示例源码：把交互行为对应到 Vue 用法
 
-路径：`/docs/components/slider#basic`。展开代码区后，可同时查看实际滑块、当前数值、提交次数和完整 Vue 示例。下图通过连续方向键输入把宽度从 `880px` 调到 `1100px`，松开后只提交一次，对应源码中的 `v-model` 与 `@change`；代码保留示例的初始值，预览显示操作后的状态。
+[Slider 示例](https://101.35.217.21:6008/docs/components/slider#basic) 展开代码区后，可同时查看实际滑块、当前数值、提交次数和完整 Vue 示例。截图显示初始宽度 `880px` 与尚未操作的状态；源码包含样式导入、响应式状态及交互绑定，可复制到自己的项目继续验证。
 
-[![Slider 示例与源码：键盘调整到 1100px、单次提交反馈，以及数值范围、步长和 change 事件的 Vue 用法](docs/images/slider-source.png)](docs/images/slider-source.png)
+[![生产 Slider 文档：滑块实时预览与展开的完整 Vue 源码](docs/images/source-production.jpg)](docs/images/source-production.jpg)
 
 ### API 参考：类型、默认值与行为边界
 
-路径：`/docs/components/slider#props`。Props 与 Events 表按属性、类型、默认值、载荷和说明组织，除了列出接口，也解释步长规范化、表单状态继承、可访问名称以及连续更新和结束提交的区别。读者可以从交互示例继续向下查阅具体约束。
+[Table Props](https://101.35.217.21:6008/docs/components/table#props) 按属性、类型、默认值和说明组织。表格除了列出接口，还说明稳定行标识、虚拟滚动、尺寸继承和加载行为；事件、插槽、实例方法及类型边界可通过本页目录继续查阅。
 
-[![Slider API 参考：Props 属性、类型和默认值，以及 Events 载荷与触发规则](docs/images/api-reference.png)](docs/images/api-reference.png)
-
-### 首页：从项目介绍进入组件体验
-
-路径：`/`。首页提供项目定位、安装命令与组件入口，右侧演示可切换 Motion、Controls 和 Compose。下图展示 Controls 场景，将颜色选择器、标签和按钮放在一起，介绍主题变量与组件组合。
-
-[![文档站首页 Controls 场景：项目介绍、安装命令、主题颜色控件、标签和按钮组合](docs/images/home.png)](docs/images/home.png)
+[![生产 Table API：属性、TypeScript 类型、默认值和行为说明](docs/images/api-production.jpg)](docs/images/api-production.jpg)
 
 ## 本地运行
 
@@ -141,39 +152,6 @@ pnpm dev --port 3001
 网页正文由 `@comark/nuxt` 渲染，通过 Nuxt 的 `useAsyncData` 复用服务端解析结果与客户端水合数据。章节保留显式的 `section` ID，渲染器关闭自动标题 ID，以保持目录和链接稳定。
 
 网页代码区与 AI 文档共用完整示例文件：带参数面板的网页代码反映当前配置，AI 导出使用默认演示参数。交互预览另有 playground 状态，因此仍需通过浏览器核对预览和代码的实际行为。
-
-## AI 文档
-
-AI 入口为自动化工具和编程助手提供可直接读取的文本资料，包含适用版本、完整用法、独立示例和展开后的 API 表。
-
-- [`public/llms.txt`](public/llms.txt)：发现组件文档，确认入口和适用范围。
-- [`public/ai/manifest.json`](public/ai/manifest.json)：核对包版本、文档修订、逐组件状态及 SHA-256。
-- [`public/ai/guides/upgrade.md`](public/ai/guides/upgrade.md)：与升级页共用的迁移指南，包含历史边界与当前写法。
-- [Button 文档](public/ai/components/button.md)、[Form 文档](public/ai/components/form.md)、[Table 文档](public/ai/components/table.md)：查看完整导出示例。
-
-读取时先确认应用安装的组件版本，再按清单选择对应组件文档。当前没有历史版本快照；迁移中或标记为 `unreleased` 的内容不能当作已发布包的已验证能力。
-
-### 导出与一致性检查
-
-这些命令无需启动网站或运行完整构建：
-
-```powershell
-# 导出全部已登记组件及共享入口
-pnpm docs:export
-
-# 只检查现有产物是否与来源一致
-pnpm docs:check
-
-# 单独更新或检查一个组件
-pnpm docs:export button
-pnpm docs:check button
-```
-
-- 单组件命令处理目标组件和共享升级指南、README 版本统计、入口 / 清单，并要求其他组件的产物保持同步。
-- 首次生成或同时修改多个组件时，使用不带组件名的全量命令。
-- 导出文件由脚本生成，应与来源一起提交到 Git，不手工修改。
-- `.gitattributes` 将生成文件固定为 LF，保证 Windows checkout 后的一致性和摘要校验。
-- 导出器会检查缺失引用、遗漏的 API / 示例、不支持的节点及版本不匹配；生成成功表示来源一致，实际交互仍需单独验证。
 
 ## 主题与阅读体验
 
@@ -296,13 +274,19 @@ docs/                      # 维护记录、验收说明与 README 配图
 ## 进一步阅读
 
 - [维护与验证说明](docs/maintenance.md)：原 README 的版本同步记录、导出细节、验证范围和边界说明。
-- [展示入口说明](docs/https-entry.md)：本地预览、静态托管与公开入口边界。
-- [Bing UI](https://github.com/moubing/bing-ui)：组件实现、类型和 Storybook。
-- [Requirement Board](https://github.com/moubing/requirement-board)：使用同一组件库的实际产品。
-- [公开发布说明](docs/publication.md)：发布范围、排除项、独立历史与第三方许可说明。
+- [站点入口说明](docs/https-entry.md)：入口配置与维护资料。
 - [升级指南](content/guides/upgrade.md)：组件库的默认行为与迁移注意事项。
 - [AI 文档入口](public/llms.txt)与[版本清单](public/ai/manifest.json)：供工具和开发者读取的当前文档索引。
 - [独立示例测试说明](tests/fixtures/ai-docs/README.md)：导出代码的验证环境与使用方式。
 - [组件迁移记录](docs/component-migration-progress.md)：历史迁移过程与逐组件核对资料。
 
-本文 8 张配图来自本地运行的真实站点，保存在 `docs/images/`，使用仓库内相对路径引用，阅读 README 无需运行站点。
+## 相关项目
+
+| 项目 | 职责 | 在线入口 |
+| --- | --- | --- |
+| [Bing UI](https://github.com/moubing/bing-ui) | 组件实现、类型、主题与 Storybook | [组件演示](https://101.35.217.21:6007/?path=/docs/components-binganimatedtext--docs) |
+| [Requirement Board](https://github.com/moubing/requirement-board) | 使用同一组件库的文档协作、版本管理与富文本 Diff 产品 | [游客体验](https://101.35.217.21/demo/) |
+
+本文四张界面配图均于 2026-11-14 从生产文档站截取，保存在 `docs/images/`，阅读 README 无需运行站点。
+
+公开发布范围、排除项及第三方许可说明见[公开发布说明](docs/publication.md)。
