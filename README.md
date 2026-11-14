@@ -11,15 +11,17 @@
 
 `bing-ui-docs` 是 `@moubing/bing-ui` 的使用文档与交互演示站。它把项目介绍、快速开始、组件说明、参数面板、完整 Vue 示例和 API 参考放在同一个阅读流程中，帮助开发者了解组件、验证用法并复制到自己的项目。
 
+同一份来源还会导出给 AI 编程助手阅读的文档：`llms.txt`、逐组件 Markdown 和带 SHA-256 的版本清单，导出的示例在独立应用中经过类型检查和浏览器验证。站点与导出工具由我独立开发。
+
 <!-- docs:version:start -->
 文档站本身也使用 Bing UI 构建。当前运行依赖固定为 **`@moubing/bing-ui@0.19.0`**，文档修订为 **r3**。
 <!-- docs:version:end -->
 
 [![生产文档站快速开始：组件侧栏、版本信息、安装命令与章节目录](docs/images/quick-start-production.jpg)](docs/images/quick-start-production.jpg)
 
-*2026-11-14 截取自生产文档站。快速开始集中说明版本、依赖和接入步骤；左侧切换组件，右侧定位章节。点击图片可查看原图。*
+*生产文档站的快速开始页（2026-11-14）：集中说明版本、依赖和接入步骤，左侧切换组件，右侧定位章节。点击图片查看原图。*
 
-[站点功能](#站点功能) · [AI 文档](#ai-文档) · [文档与交互细节](#文档与交互细节) · [本地运行](#本地运行) · [内容架构](#内容架构) · [维护流程](#维护流程) · [开发与验证](#开发与验证)
+[站点功能](#站点功能) · [设计要点](#设计要点) · [AI 文档](#ai-文档) · [文档与交互细节](#文档与交互细节) · [内容架构](#内容架构) · [本地运行](#本地运行) · [维护流程](#维护流程) · [验证](#验证)
 
 ## 站点功能
 
@@ -40,6 +42,13 @@
 <!-- docs:coverage:end -->
 
 组件页覆盖基础控件、表单、选择器、浮层反馈、跨区域拖放、表格与布局、媒体预览、文字动效、转场和全局配置（ConfigProvider）。示例包含树形行、虚拟滚动、服务端排序、列设置、表单校验及组件组合等用法，具体支持范围在对应页面说明。
+
+## 设计要点
+
+- **一份来源，两种输出**：正文（Markdown）、API 数据（TypeScript）和完整 Vue 示例分开维护，网页与 AI 导出读取同一批文件，改一个接口或示例只需要动一处。
+- **给 AI 读的文档可以核对**：版本清单记录包版本、文档修订、逐组件的验证状态和内容 SHA-256。`pnpm docs:check` 发现导出产物与来源不一致就失败，`build` 和 `generate` 都会先运行它。
+- **导出的示例确实能运行**：从生成的 Markdown 中提取完整 Vue 示例，放进独立的 Vue / Vite 应用做严格类型检查和无头浏览器交互测试，不依赖文档站的 Nuxt 自动导入和全局样式。
+- **跨仓库保持一致**：站点使用固定版本的 npm 包构建；发布检查脚本读取组件库仓库，核对版本号、安装命令、CHANGELOG 和文档页数，部署后还可以读取线上页面再核对一次。
 
 ## AI 文档
 
@@ -76,7 +85,7 @@ pnpm docs:check button
 
 ## 文档与交互细节
 
-以下配图直接来自生产文档页，展示实际渲染的组件、源码与 API。图片使用仓库内相对路径保存，点击可查看原图；线上页面可通过对应章节链接继续操作。
+以下配图来自生产文档页，点击可查看原图；每节的链接指向线上对应章节，可以继续操作。
 
 ### 表格：读懂说明后直接操作
 
@@ -95,6 +104,34 @@ pnpm docs:check button
 [Table Props](https://101.35.217.21:6008/docs/components/table#props) 按属性、类型、默认值和说明组织。表格除了列出接口，还说明稳定行标识、虚拟滚动、尺寸继承和加载行为；事件、插槽、实例方法及类型边界可通过本页目录继续查阅。
 
 [![生产 Table API：属性、TypeScript 类型、默认值和行为说明](docs/images/api-production.jpg)](docs/images/api-production.jpg)
+
+## 内容架构
+
+组件文档采用“正文、API、完整示例分别维护，网页与 AI 导出复用”的结构。这样更新一个接口或示例时，有明确的修改位置，也能检查生成结果是否同步。
+
+| 内容 | 维护位置 | 用途 |
+| --- | --- | --- |
+| 说明正文与章节 | `content/components/<组件名>.md` | 用法、规则、锚点与章节顺序 |
+| API 数据 | `shared/docs/<组件名>.ts` | 属性、事件、插槽、方法和类型表格 |
+| 完整 Vue 示例 | `examples/<组件名>/*.vue` | 网页代码区与 AI 导出的共用代码来源 |
+| 网页交互预览 | `app/components/examples/<组件名>/` | 实时预览、参数面板和示例状态 |
+| 参数与代码同步 | `shared/docs/example-code.ts` | 根据当前示例参数生成可复制代码 |
+| 页面路由 | `app/pages/docs/components/<组件名>.vue` | 接入 Markdown 与交互预览组件 |
+| Markdown 渲染 | `app/components/content/` | 正文渲染与 API 表适配 |
+| 组件登记 | `scripts/lib/doc-registry.ts` | 关联组件、API 表、示例及导出说明 |
+| 版本与验收 | `shared/docs/migration.ts` | 记录目标版本和逐组件验证状态 |
+
+```text
+说明正文 + API 数据 + 完整 Vue 示例
+                 │
+                 ├── 网页：Markdown 渲染 + 交互预览 + 参数面板
+                 │
+                 └── 导出：组件 Markdown + llms.txt + manifest.json
+```
+
+网页正文由 `@comark/nuxt` 渲染，通过 Nuxt 的 `useAsyncData` 复用服务端解析结果与客户端水合数据。章节保留显式的 `section` ID，渲染器关闭自动标题 ID，以保持目录和链接稳定。
+
+网页代码区与 AI 文档共用完整示例文件：带参数面板的网页代码反映当前配置，AI 导出使用默认演示参数。交互预览另有 playground 状态，因此仍需通过浏览器核对预览和代码的实际行为。
 
 ## 本地运行
 
@@ -124,34 +161,6 @@ pnpm dev --port 3001
 | `/ai/components/<组件名>.md` | 可独立阅读的组件 Markdown，例如 `/ai/components/table.md` |
 
 组件库 `bing-ui` 负责组件实现和发布，本仓库使用固定版本的 npm 包维护文档与示例。普通文档开发不需要同时启动组件库仓库。
-
-## 内容架构
-
-组件文档采用“正文、API、完整示例分别维护，网页与 AI 导出复用”的结构。这样更新一个接口或示例时，有明确的修改位置，也能检查生成结果是否同步。
-
-| 内容 | 维护位置 | 用途 |
-| --- | --- | --- |
-| 说明正文与章节 | `content/components/<组件名>.md` | 用法、规则、锚点与章节顺序 |
-| API 数据 | `shared/docs/<组件名>.ts` | 属性、事件、插槽、方法和类型表格 |
-| 完整 Vue 示例 | `examples/<组件名>/*.vue` | 网页代码区与 AI 导出的共用代码来源 |
-| 网页交互预览 | `app/components/examples/<组件名>/` | 实时预览、参数面板和示例状态 |
-| 参数与代码同步 | `shared/docs/example-code.ts` | 根据当前示例参数生成可复制代码 |
-| 页面路由 | `app/pages/docs/components/<组件名>.vue` | 接入 Markdown 与交互预览组件 |
-| Markdown 渲染 | `app/components/content/` | 正文渲染与 API 表适配 |
-| 组件登记 | `scripts/lib/doc-registry.ts` | 关联组件、API 表、示例及导出说明 |
-| 版本与验收 | `shared/docs/migration.ts` | 记录目标版本和逐组件验证状态 |
-
-```text
-说明正文 + API 数据 + 完整 Vue 示例
-                 │
-                 ├── 网页：Markdown 渲染 + 交互预览 + 参数面板
-                 │
-                 └── 导出：组件 Markdown + llms.txt + manifest.json
-```
-
-网页正文由 `@comark/nuxt` 渲染，通过 Nuxt 的 `useAsyncData` 复用服务端解析结果与客户端水合数据。章节保留显式的 `section` ID，渲染器关闭自动标题 ID，以保持目录和链接稳定。
-
-网页代码区与 AI 文档共用完整示例文件：带参数面板的网页代码反映当前配置，AI 导出使用默认演示参数。交互预览另有 playground 状态，因此仍需通过浏览器核对预览和代码的实际行为。
 
 ## 主题与阅读体验
 
@@ -183,9 +192,9 @@ pnpm dev --port 3001
 
 正式包尚未提供的 API 使用 `unreleased` 标记。已有版本的验收记录只说明当时验证过的范围；完整规则与历史记录保留在 [维护与验证说明](docs/maintenance.md)。
 
-每次发布还须核对升级指南、快速开始、首页和两仓库 README，更新 `shared/docs/release.ts` 的人工基线及验收状态。`docs:check` 检查当前安装推荐、旧入口、章节链接和生成区块；`build` / `generate` 会先运行它。全站 `siteReview` 与组件覆盖分开，未核对项保留 pending；部署后再运行 `docs:check-release --site <origin>` 读取实际页面与清单。具体步骤、跨仓库检查和本轮结果见[发布核对记录](docs/release-validation.md)。
+每次发布还要核对升级指南、快速开始、首页和两个仓库的 README，并更新 `shared/docs/release.ts` 中的人工核对基线。`docs:check` 会拒绝过期的推荐版本、失效的章节链接和未同步的生成区块；部署后运行 `docs:check-release --site <origin>` 读取线上页面与清单。未核对的页面保持待核对状态，不随导出自动通过。完整步骤和本轮结果见[发布核对记录](docs/release-validation.md)。
 
-## 开发与验证
+## 验证
 
 ### 常用命令
 
@@ -282,11 +291,13 @@ docs/                      # 维护记录、验收说明与 README 配图
 
 ## 相关项目
 
+三个仓库构成一条完整的链路：组件库发布到 npm，本站点说明并验证用法，Requirement Board 在真实产品中使用它。
+
 | 项目 | 职责 | 在线入口 |
 | --- | --- | --- |
 | [Bing UI](https://github.com/moubing/bing-ui) | 组件实现、类型、主题与 Storybook | [组件演示](https://101.35.217.21:6007/?path=/docs/components-binganimatedtext--docs) |
 | [Requirement Board](https://github.com/moubing/requirement-board) | 使用同一组件库的文档协作、版本管理与富文本 Diff 产品 | [游客体验](https://101.35.217.21/demo/) |
 
-本文四张界面配图均于 2026-11-14 从生产文档站截取，保存在 `docs/images/`，阅读 README 无需运行站点。
+本文四张配图于 2026-11-14 截取自生产文档站，保存在 `docs/images/`。
 
 公开发布范围、排除项及第三方许可说明见[公开发布说明](docs/publication.md)。
